@@ -142,32 +142,49 @@ void TestMainApp::UpdateInput()
 
 void TestMainApp::UpdateLogic()
 {
-    LoadAssets();
+    std::filesystem::path ext;
+
+    LoadAssets(&ext); //파일 확장자 리턴
 
     if (m_selectedAssetKey.empty()) return; // 선택된 애셋 키가 비어있으면 리턴
 
-    const AnimationClips& clips = m_AssetManager.GetClips(m_selectedAssetKey);
-
-    if (clips.empty()) return; // 클립이 없으면 리턴
-
-    if (m_bChangedFile)
+    if (ext == L".png")
     {
-        // 파일이 변경되었으면 애니메이션 정보 초기화
-        m_curSprites.clear();
-        m_bChangedFile = false;
+        const auto sprite = m_AssetManager.GetSpriteBitmap(m_selectedAssetKey);
+        if (sprite  == nullptr) return;
 
-        // 애니메이션 플레이어 생성 및 클립 설정
-        for (const auto& pair : clips)
+        if (m_bChangedFile)
         {
-            SpriteAnimator ap;
+            m_bChangedFile = false;
 
-            const auto& clip = pair.second;
+            m_curTexture = sprite;
+        }
+    }
+    else if (ext == L".json")
+    {
+        const AnimationClips& clips = m_AssetManager.GetClips(m_selectedAssetKey);
 
-            std::cout << &clip << std::endl;
+        if (clips.empty()) return; // 클립이 없으면 리턴
 
-            ap.SetClip(&clip);
+        if (m_bChangedFile)
+        {
+            // 파일이 변경되었으면 애니메이션 정보 초기화
+            m_curSprites.clear();
+            m_bChangedFile = false;
 
-            m_curSprites.push_back(ap);
+            // 애니메이션 플레이어 생성 및 클립 설정
+            for (const auto& pair : clips)
+            {
+                SpriteAnimator ap;
+
+                const auto& clip = pair.second;
+
+                std::cout << &clip << std::endl;
+
+                ap.SetClip(&clip);
+
+                m_curSprites.push_back(ap);
+            }
         }
     }
 
@@ -185,6 +202,16 @@ void TestMainApp::Render()
 
    
     m_Renderer->RenderBegin();
+
+    if (m_curTexture)
+    {
+        int xOffset = 300;
+        int yOffset = 100;
+        D2D1_SIZE_F size = m_curTexture->GetSize();
+        D2D1_RECT_F rect = D2D1::RectF(xOffset, yOffset, xOffset + size.width, yOffset + size.height);
+
+        m_Renderer->DrawBitmap(m_curTexture.Get(), rect);
+    }
 
     int count = m_curSprites.size();
     // 여러 애니메이션을 모두 보여주는 렌더링
@@ -310,7 +337,7 @@ void TestMainApp::RenderImGUI()
     ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 }
 
-void TestMainApp::LoadAssets()
+void TestMainApp::LoadAssets(std::filesystem::path* outExt)
 {
     std::filesystem::path fullPath =
         m_folderPath / std::filesystem::path(m_selectedFile);
@@ -318,6 +345,7 @@ void TestMainApp::LoadAssets()
     auto ext = fullPath.extension();
     if (ext.empty()) return; // 확장자가 없으면 리턴
 
+    *outExt = ext;
     std::filesystem::path keyPath = fullPath;
     keyPath.replace_extension(); // 확장자 제거하고 키로 쓸꺼에요
 
@@ -334,8 +362,14 @@ void TestMainApp::LoadAssets()
     {
         m_AssetManager.AddAsset(fullPath, keyWide, m_Renderer.get());
     }
+    else if (ext == L".png")
+    {
+        m_AssetManager.AddTexture(fullPath, keyWide, m_Renderer.get());
+    }
 
     m_bChangedFile = true; // 파일이 변경되었음을 표시
+
+    return;
 }
 
 

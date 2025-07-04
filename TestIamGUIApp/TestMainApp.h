@@ -36,7 +36,7 @@ private:
     void Render();
     void RenderImGUI();
 
-    void LoadAssets();
+    void LoadAssets(std::filesystem::path* outExt);
 
     void OnResize(int width, int height) override;
     void OnClose() override;
@@ -57,6 +57,8 @@ private:
     std::wstring    m_selectedAssetKey;
 
     std::vector<SpriteAnimator> m_curSprites;
+
+    Microsoft::WRL::ComPtr<ID2D1Bitmap1> m_curTexture;
 
     std::vector<std::wstring> m_fileList;
 

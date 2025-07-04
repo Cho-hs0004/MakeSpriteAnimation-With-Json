@@ -16,8 +16,10 @@ public:
     ~AssetManager() = default;
 
     void AddAsset(const std::filesystem::path& jsonPath, std::wstring key, sample::D2DRenderer* renderer);
+    void AddTexture(const std::filesystem::path& texturePath, std::wstring key, sample::D2DRenderer* renderer);
 
     AnimationClips& GetClips(std::wstring key);
+    Microsoft::WRL::ComPtr<ID2D1Bitmap1> GetSpriteBitmap(std::wstring key);
 
 
 private:
